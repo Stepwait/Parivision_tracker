@@ -1,4 +1,4 @@
-// Конфигурация
+    // Конфигурация
 const CONFIG = {
   LIQUIPEDIA_API: "https://api.liquipedia.net/api/v3",
   LIQUIPEDIA_TOKEN: "gs5CYirguo31uHuyUZtkdTUfBfxDIESzHbuuNMpyQjKBqORyLbebiKQsbmWya4zh93vq06IsCkr5j9MMLXSBlHsf0n9cGCJHG8Et8FsBjOxIRLyC8EQTm9QlKiCAmfoA",
@@ -8,23 +8,23 @@ const CONFIG = {
   WIKI: "counterstrike",
   LIMIT: 200,
   
-  // Оптимизированные интервалы обновления
+    // Оптимизированные интервалы обновления
   BACKGROUND_UPDATE_INTERVAL: 10 * 60 * 1000,        // 10 минут между фоновыми обновлениями
   USER_REQUEST_UPDATE_INTERVAL: 20 * 60 * 1000,       // 2 минуты между обновлениями по запросу пользователя
   MIN_UPDATE_INTERVAL: 5 * 60 * 1000,                // 5 минут минимальный интервал
   
-  // Настройки повторных попыток
+    // Настройки повторных попыток
   MAX_RETRIES: 2,
   RETRY_DELAY: 5000,
   
   ALERT_EMAIL: "",
   SYNC_UPDATE_TIMEOUT: 15000,
   
-  // Настройки для AJAX-запросов
+    // Настройки для AJAX-запросов
   CACHE_AGE_FOR_UPDATE: 10 * 60 * 1000,              // 10 минут - возраст кэша для принудительного обновления
 };
 
-// Система логирования
+    // Система логирования
 const LOG_CONFIG = {
   MAX_LOGS: 50,
   LOG_LEVELS: {
@@ -36,7 +36,7 @@ const LOG_CONFIG = {
   }
 };
 
-// Главные функции для Web API
+    // Главные функции для Web API
 function doGet(e) {
   const params = e?.parameter || {};
   const functionName = params.function || params.func || 'getNextMatch';
@@ -44,47 +44,45 @@ function doGet(e) {
   try {
     let result;
     
-    // ВАЖНОЕ ИЗМЕНЕНИЕ: разные типы запросов обрабатываем по-разному
-    switch(functionName) {
+    // разные типы запросов обрабатываем по-разному
+  switch(functionName) {
       case 'getNextMatch':
       case 'getAllUpcomingMatches':
-        // ПОЛЬЗОВАТЕЛЬСКИЕ ЗАПРОСЫ: запускаем гарантированное обновление
-        const updateResult = startGuaranteedUpdate();
+  const updateResult = startGuaranteedUpdate();
         console.log('User request update for', functionName, ':', updateResult);
         break;
         
-      case 'getMatchesJSON':
-        // AJAX ДЛЯ ПАНЕЛИ: только возвращаем данные, не обновляем
-        return ContentService.createTextOutput(JSON.stringify(getTeamMatches(false)))
+   case 'getMatchesJSON':
+         // AJAX ДЛЯ ПАНЕЛИ: только возвращаем данные, не обновляем
+   return ContentService.createTextOutput(JSON.stringify(getTeamMatches(false)))
           .setMimeType(ContentService.MimeType.JSON);
           
-      case 'getSystemStatus':
-        // AJAX ЗАПРОС СТАТУСА: проверяем кэш, но НЕ запускаем startGuaranteedUpdate
-        const cache = CacheService.getScriptCache();
-        const currentCache = cache.get("raw_matches_data");
-        const now = new Date().getTime();
+   case 'getSystemStatus':
+  const cache = CacheService.getScriptCache();
+  const currentCache = cache.get("raw_matches_data");
+  const now = new Date().getTime();
         
-        let shouldForceUpdate = false;
+   let shouldForceUpdate = false;
         
-        if (currentCache) {
+  if (currentCache) {
           try {
             const cacheData = JSON.parse(currentCache);
             const cacheAge = now - cacheData.timestamp;
             const cacheAgeMinutes = Math.round(cacheAge / 60000);
             
-            console.log('Cache age for AJAX:', cacheAgeMinutes, 'minutes');
+   console.log('Cache age for AJAX:', cacheAgeMinutes, 'minutes');
             
             // Если кэш очень старый (больше 30 минут) - принудительно обновляем
-            if (cacheAgeMinutes > 30) {
-              console.log('Cache is very old (' + cacheAgeMinutes + ' min), forcing update...');
-              shouldForceUpdate = true;
+   if (cacheAgeMinutes > 30) {
+  console.log('Cache is very old (' + cacheAgeMinutes + ' min), forcing update...');
+  shouldForceUpdate = true;
             }
           } catch (e) {
             console.error('Error parsing cache:', e);
           }
         }
         
-        if (shouldForceUpdate) {
+  if (shouldForceUpdate) {
           try {
             ScriptApp.newTrigger('runForcedBackgroundUpdate')
               .timeBased()
@@ -96,22 +94,20 @@ function doGet(e) {
           }
         }
         
+  result = JSON.stringify(getUpdateStatus());
+  return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON);
+        
+  case 'updateStatus':
         result = JSON.stringify(getUpdateStatus());
         return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON);
         
-      case 'updateStatus':
-        // Простой запрос статуса без дополнительной логики
-        result = JSON.stringify(getUpdateStatus());
-        return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON);
-        
-      default:
-        // Для остальных запросов (кроме специальных) запускаем обновление
+  default:
         const defaultUpdateResult = startGuaranteedUpdate();
         console.log('Default update for', functionName, ':', defaultUpdateResult);
     }
     
     // Выполняем запрошенную функцию
-    switch(functionName) {
+  switch(functionName) {
       case 'getNextMatch':
         result = getNextMatch();
         break;
@@ -140,7 +136,7 @@ function doGet(e) {
         result = getNextMatch();
     }
     
-    return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
+  return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
   } catch (error) {
     console.error('doGet Error:', error);
     logSystemEvent('doGet Error: ' + error.message, LOG_CONFIG.LOG_LEVELS.ERROR);
@@ -153,19 +149,18 @@ function doPost(e) {
   return doGet(e);
 }
 
-// УПРОЩЕННАЯ И ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ОБНОВЛЕНИЙ
 function shouldSkipUpdate(updateType = 'background') {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
   
-  // 1. Проверяем, не выполняется ли уже обновление
+    // 1. Проверяем, не выполняется ли уже обновление
   const updateInProgress = cache.get("update_in_progress");
   if (updateInProgress === "true") {
     console.log('Update skipped - already in progress');
     return true;
   }
   
-  // 2. Получаем возраст кэша
+    // 2. Получаем возраст кэша
   const currentCache = cache.get("raw_matches_data");
   let cacheAgeMinutes = 999; // Большое значение, если кэша нет
   
@@ -180,25 +175,25 @@ function shouldSkipUpdate(updateType = 'background') {
   
   console.log(`Cache age: ${cacheAgeMinutes} minutes, updateType: ${updateType}`);
   
-  // 3. Если кэш очень старый (>30 минут), НЕ пропускаем обновление
+    // 3. Если кэш очень старый (>30 минут), НЕ пропускаем обновление
   if (cacheAgeMinutes > 30) {
-    console.log(`Cache is very old (${cacheAgeMinutes} min), allowing update`);
+   console.log(`Cache is very old (${cacheAgeMinutes} min), allowing update`);
     return false;
   }
   
-  // 4. Если кэш старый (15-30 минут), проверяем последнее успешное обновление
+    // 4. Если кэш старый (15-30 минут), проверяем последнее успешное обновление
   if (cacheAgeMinutes > 15) {
     const lastUpdate = cache.get("last_successful_update");
     const lastUpdateTime = lastUpdate ? parseInt(lastUpdate) : 0;
     const minutesSinceLastUpdate = Math.round((now - lastUpdateTime) / 60000);
     
-    if (minutesSinceLastUpdate > 5) { // Прошло больше 5 минут с последнего обновления
+  if (minutesSinceLastUpdate > 5) { // Прошло больше 5 минут с последнего обновления
       console.log(`Cache is old, last update was ${minutesSinceLastUpdate} min ago, allowing update`);
       return false;
     }
   }
   
-  // 5. Для свежего кэша проверяем интервалы между попытками
+    // 5. Для свежего кэша проверяем интервалы между попытками
   if (updateType === 'forced') {
     const lastForcedAttempt = cache.get("last_forced_attempt");
     if (lastForcedAttempt && (now - parseInt(lastForcedAttempt)) < 2 * 60 * 1000) {
@@ -222,15 +217,14 @@ function shouldSkipUpdate(updateType = 'background') {
   return false;
 }
 
-// НОВАЯ ФУНКЦИЯ: принудительное фоновое обновление для AJAX запросов
 function runForcedBackgroundUpdate() {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
   
-  // 1. Обновляем время попытки для принудительных обновлений
+    // 1. Обновляем время попытки для принудительных обновлений
   cache.put("last_forced_attempt", now.toString(), 900);
   
-  // 2. Проверяем, нужно ли пропустить
+    // 2. Проверяем, нужно ли пропустить
   if (shouldSkipUpdate('forced')) {
     logSystemEvent('Принудительное обновление пропущено - слишком частый запрос', LOG_CONFIG.LOG_LEVELS.INFO);
     return "🔄 Принудительное обновление пропущено - слишком частый запрос";
@@ -240,54 +234,52 @@ function runForcedBackgroundUpdate() {
   logSystemEvent('Запущено принудительное фоновое обновление', LOG_CONFIG.LOG_LEVELS.INFO);
   
   try {
-    // Устанавливаем флаг выполнения
-    cache.put("update_in_progress", "true", 120);
+  cache.put("update_in_progress", "true", 120);
     
     // Проверяем лимиты API
-    const limits = checkAPILimit();
-    console.log('API limits:', limits);
+  const limits = checkAPILimit();
+  console.log('API limits:', limits);
     
     // Получаем данные с API
-    const allMatches = fetchAllMatchesWithRetry();
-    const teamMatches = filterTeamMatches(allMatches);
+  const allMatches = fetchAllMatchesWithRetry();
+  const teamMatches = filterTeamMatches(allMatches);
     
-    if (!teamMatches) {
-      throw new Error('No team matches received');
+  if (!teamMatches) {
+    throw new Error('No team matches received');
     }
     
-    // Сохраняем данные
-    const rawCacheData = {
+     // Сохраняем данные
+  const rawCacheData = {
       rawMatches: teamMatches,
       timestamp: now,
       source: 'forced_background_update',
       matchesCount: teamMatches.length
     };
     
-    cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
-    cache.put("last_successful_update", now.toString(), 3600);
+  cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
+  cache.put("last_successful_update", now.toString(), 3600);
     
     // Сбрасываем счетчик ошибок
-    cache.put("error_count", "0", 3600);
+  cache.put("error_count", "0", 3600);
     
-    console.log('Forced update completed. Matches:', teamMatches.length);
-    logSystemEvent(`Принудительное обновление завершено. Матчей: ${teamMatches.length}`, LOG_CONFIG.LOG_LEVELS.SUCCESS);
+  console.log('Forced update completed. Matches:', teamMatches.length);
+  logSystemEvent(`Принудительное обновление завершено. Матчей: ${teamMatches.length}`, LOG_CONFIG.LOG_LEVELS.SUCCESS);
     
-    return `✅ Данные обновлены. Матчей: ${teamMatches.length}`;
+  return `✅ Данные обновлены. Матчей: ${teamMatches.length}`;
     
   } catch (error) {
     console.error('Forced update failed:', error);
     logSystemEvent(`Ошибка принудительного обновления: ${error.message}`, LOG_CONFIG.LOG_LEVELS.ERROR);
     return `❌ Ошибка: ${error.message}`;
   } finally {
-    // Убираем флаг выполнения
     cache.remove("update_in_progress");
     
     // Удаляем триггер
-    deleteBackgroundUpdateTrigger('runForcedBackgroundUpdate');
+  deleteBackgroundUpdateTrigger('runForcedBackgroundUpdate');
   }
 }
 
-// Система логирования
+    // Система логирования
 function logSystemEvent(message, level = LOG_CONFIG.LOG_LEVELS.INFO) {
   const cache = CacheService.getScriptCache();
   const timestamp = new Date().getTime();
@@ -300,7 +292,7 @@ function logSystemEvent(message, level = LOG_CONFIG.LOG_LEVELS.INFO) {
     source: 'system'
   };
   
-  // Получаем текущие логи
+    // Получаем текущие логи
   let logs = [];
   const storedLogs = cache.get('system_logs');
   if (storedLogs) {
@@ -311,15 +303,15 @@ function logSystemEvent(message, level = LOG_CONFIG.LOG_LEVELS.INFO) {
     }
   }
   
-  // Добавляем новую запись
+    // Добавляем новую запись
   logs.unshift(logEntry);
   
-  // Ограничиваем количество логов
+    // Ограничиваем количество логов
   if (logs.length > LOG_CONFIG.MAX_LOGS) {
     logs = logs.slice(0, LOG_CONFIG.MAX_LOGS);
   }
   
-  // Сохраняем обратно
+    // Сохраняем обратно
   cache.put('system_logs', JSON.stringify(logs), 3600);
   
   console.log(`[${level.toUpperCase()}] ${message}`);
@@ -348,30 +340,26 @@ function clearSystemLogs() {
   logSystemEvent('Системные логи очищены', LOG_CONFIG.LOG_LEVELS.INFO);
   return "✅ Системные логи очищены";
 }
-
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ ГАРАНТИРОВАННОГО ОБНОВЛЕНИЯ
 function startGuaranteedUpdate() {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
   
-  // 1. Обновляем время попытки пользовательского запроса
+    // 1. Обновляем время попытки пользовательского запроса
   cache.put("last_update_attempt", now.toString(), 900);
   
-  // 2. Проверяем, нужно ли пропустить обновление для пользователя
+    // 2. Проверяем, нужно ли пропустить обновление для пользователя
   if (shouldSkipUpdate('user')) {
     logSystemEvent('Обновление пропущено - слишком частый запрос', LOG_CONFIG.LOG_LEVELS.INFO);
     return "🔄 Обновление пропущено - слишком частый запрос";
   }
   
-  // 3. Проверяем, можно ли выполнить фоновое обновление
+    // 3. Проверяем, можно ли выполнить фоновое обновление
   if (!shouldSkipUpdate('background')) {
-    // Запускаем синхронное обновление
     try {
       const result = runSyncUpdateWithTimeout();
       return result;
     } catch (error) {
       console.log('Sync update failed:', error);
-      // Пробуем запустить асинхронно
       try {
         ScriptApp.newTrigger('runBackgroundUpdate')
           .timeBased()
@@ -389,33 +377,31 @@ function startGuaranteedUpdate() {
   }
 }
 
-// Синхронное обновление с таймаутом
+    // Синхронное обновление с таймаутом
 function runSyncUpdateWithTimeout() {
   const cache = CacheService.getScriptCache();
   const startTime = new Date().getTime();
   
   try {
-    // Устанавливаем флаг "обновление выполняется"
-    cache.put("update_in_progress", "true", 120);
+  cache.put("update_in_progress", "true", 120);
     
     // Выполняем обновление
-    const result = runBackgroundUpdate();
+  const result = runBackgroundUpdate();
     
     // Убираем флаг
-    cache.remove("update_in_progress");
+  cache.remove("update_in_progress");
     
-    const duration = new Date().getTime() - startTime;
-    console.log(`Sync update completed in ${duration}ms: ${result}`);
-    logSystemEvent(`Синхронное обновление завершено за ${duration}мс: ${result}`, LOG_CONFIG.LOG_LEVELS.INFO);
-    return result;
+  const duration = new Date().getTime() - startTime;
+  console.log(`Sync update completed in ${duration}ms: ${result}`);
+  logSystemEvent(`Синхронное обновление завершено за ${duration}мс: ${result}`, LOG_CONFIG.LOG_LEVELS.INFO);
+  return result;
   } catch (error) {
-    // Убираем флаг при ошибке
     cache.remove("update_in_progress");
     throw error;
   }
 }
 
-// Защита от превышения лимитов API
+    // Защита от превышения лимитов API
 function checkAPILimit() {
   const cache = CacheService.getScriptCache();
   const now = new Date();
@@ -424,17 +410,17 @@ function checkAPILimit() {
   const dailyKey = `api_requests_${today}`;
   const hourlyKey = `api_requests_${now.getHours()}`;
   
-  // Получаем текущие счетчики
+    // Получаем текущие счетчики
   const dailyCount = parseInt(cache.get(dailyKey) || "0");
   const hourlyCount = parseInt(cache.get(hourlyKey) || "0");
   
-  // Увеличиваем счетчики
+    // Увеличиваем счетчики
   cache.put(dailyKey, (dailyCount + 1).toString(), 86400);
   cache.put(hourlyKey, (hourlyCount + 1).toString(), 3600);
   
   console.log(`API requests - Today: ${dailyCount + 1}, This hour: ${hourlyCount + 1}`);
   
-  // Разумные лимиты для Liquipedia API
+    // Разумные лимиты для Liquipedia API
   const DAILY_LIMIT = 800;
   const HOURLY_LIMIT = 100;
   
@@ -458,7 +444,7 @@ function checkAPILimit() {
   };
 }
 
-// Расширенный мониторинг статуса с информацией об API
+    // Расширенный мониторинг статуса с информацией об API
 function getUpdateStatus() {
   const cache = CacheService.getScriptCache();
   const lastUpdate = cache.get("last_successful_update");
@@ -476,7 +462,7 @@ function getUpdateStatus() {
   const today = new Date().toDateString();
   const hourlyKey = `api_requests_${new Date().getHours()}`;
   
-  // Мониторинг использования API
+    // Мониторинг использования API
   const dailyCount = parseInt(cache.get(`api_requests_${today}`) || "0");
   const hourlyCount = parseInt(cache.get(hourlyKey) || "0");
   const usagePercent = Math.round((dailyCount / 800) * 100);
@@ -527,7 +513,7 @@ function getUpdateStatus() {
   };
 }
 
-// Улучшенное логирование ошибок
+    // логирование ошибок
 function logError(error, context = 'unknown') {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
@@ -539,30 +525,29 @@ function logError(error, context = 'unknown') {
     stack: error.stack || 'No stack trace'
   };
   
-  // Сохраняем последнюю ошибку
+    // Сохраняем последнюю ошибку
   cache.put("last_update_error", error.message || error.toString(), 3600);
   cache.put("last_update_error_details", JSON.stringify(errorDetails), 3600);
   cache.put("last_update_error_time", now.toString(), 3600);
   
-  // Увеличиваем счетчик ошибок
+    // Увеличиваем счетчик ошибок
   const currentCount = parseInt(cache.get("error_count") || "0");
   cache.put("error_count", (currentCount + 1).toString(), 3600);
   
-  // Логируем в системные логи
+    // Логируем в системные логи
   logSystemEvent(`Ошибка в ${context}: ${error.message}`, LOG_CONFIG.LOG_LEVELS.ERROR);
   
   console.error(`Error [${context}]:`, error);
 }
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ ФОНОВОГО ОБНОВЛЕНИЯ
 function runBackgroundUpdate() {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
   
-  // 1. Обновляем время попытки фонового обновления
+    // 1. Обновляем время попытки фонового обновления
   cache.put("last_background_attempt", now.toString(), 900);
   
-  // 2. Проверяем, нужно ли пропустить
+    // 2. Проверяем, нужно ли пропустить
   if (shouldSkipUpdate('background')) {
     logSystemEvent('Фоновое обновление пропущено - слишком частый запрос', LOG_CONFIG.LOG_LEVELS.INFO);
     return "🔄 Обновление пропущено - слишком частый запрос";
@@ -577,40 +562,40 @@ function runBackgroundUpdate() {
       return "🔄 Обновление уже выполняется";
     }
     
-    console.log('Background update started...');
-    logSystemEvent('Запуск фонового обновления данных', LOG_CONFIG.LOG_LEVELS.INFO);
+  console.log('Background update started...');
+  logSystemEvent('Запуск фонового обновления данных', LOG_CONFIG.LOG_LEVELS.INFO);
     
-    cache.put("update_in_progress", "true", 120);
+  cache.put("update_in_progress", "true", 120);
     
     // Проверка лимитов API
-    const limits = checkAPILimit();
-    console.log('API limits:', limits);
-    logSystemEvent(`Проверка лимитов API пройдена: ${limits.daily}/${limits.dailyLimit} сегодня, ${limits.hourly}/${limits.hourlyLimit} в этом часу`, LOG_CONFIG.LOG_LEVELS.INFO);
+  const limits = checkAPILimit();
+  console.log('API limits:', limits);
+  logSystemEvent(`Проверка лимитов API пройдена: ${limits.daily}/${limits.dailyLimit} сегодня, ${limits.hourly}/${limits.hourlyLimit} в этом часу`, LOG_CONFIG.LOG_LEVELS.INFO);
     
     // Получаем данные
-    const allMatches = fetchAllMatchesWithRetry();
-    const teamMatches = filterTeamMatches(allMatches);
+  const allMatches = fetchAllMatchesWithRetry();
+  const teamMatches = filterTeamMatches(allMatches);
     
-    if (!teamMatches) {
+  if (!teamMatches) {
       throw new Error('No team matches received');
     }
     
     // Сохраняем данные
-    const rawCacheData = {
+  const rawCacheData = {
       rawMatches: teamMatches,
       timestamp: now,
       source: 'background_update',
       matchesCount: teamMatches.length
     };
     
-    cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
-    cache.put("last_successful_update", now.toString(), 3600);
-    cache.put("error_count", "0", 3600);
+  cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
+  cache.put("last_successful_update", now.toString(), 3600);
+  cache.put("error_count", "0", 3600);
     
-    console.log(`Background update completed. Matches: ${teamMatches.length}`);
-    logSystemEvent(`Фоновое обновление завершено. Матчей: ${teamMatches.length}`, LOG_CONFIG.LOG_LEVELS.SUCCESS);
+  console.log(`Background update completed. Matches: ${teamMatches.length}`);
+  logSystemEvent(`Фоновое обновление завершено. Матчей: ${teamMatches.length}`, LOG_CONFIG.LOG_LEVELS.SUCCESS);
     
-    return `✅ Данные обновлены. Матчей: ${teamMatches.length}`;
+  return `✅ Данные обновлены. Матчей: ${teamMatches.length}`;
     
   } catch (error) {
     console.error('Background update failed:', error);
@@ -623,14 +608,12 @@ function runBackgroundUpdate() {
       console.log('Lock release error:', e);
     }
     
-    cache.remove("update_in_progress");
-    deleteBackgroundUpdateTrigger('runBackgroundUpdate');
+  cache.remove("update_in_progress");
+  deleteBackgroundUpdateTrigger('runBackgroundUpdate');
   }
 }
 
-// Обновленная функция API с проверкой лимитов и ИСПРАВЛЕНИЕМ SSL
 function fetchAllMatchesWithDebug() {
-  // ПРОВЕРЯЕМ ЛИМИТЫ ПЕРЕД ЗАПРОСОМ
   const limits = checkAPILimit();
   console.log('API limits check:', limits);
   
@@ -653,7 +636,6 @@ function fetchAllMatchesWithDebug() {
   console.log('Fetching from Liquipedia API:', url);
   logSystemEvent(`Запрос к Liquipedia API: ${url}`, LOG_CONFIG.LOG_LEVELS.DEBUG);
   
-  // ДОБАВЛЕНО: validateHttpsCertificates: false для исправления SSL ошибок
   const options = {
     'method': 'GET',
     'headers': {
@@ -671,23 +653,23 @@ function fetchAllMatchesWithDebug() {
     const responseCode = response.getResponseCode();
     const contentText = response.getContentText();
     
-    if (responseCode !== 200) {
+  if (responseCode !== 200) {
       const error = new Error(`Liquipedia API ошибка: ${responseCode}`);
       logSystemEvent(`Ошибка API Liquipedia: ${responseCode}`, LOG_CONFIG.LOG_LEVELS.ERROR);
       throw error;
     }
     
-    const data = JSON.parse(contentText);
+  const data = JSON.parse(contentText);
     
-    if (!data || !data.result) {
+  if (!data || !data.result) {
       const error = new Error('Некорректный ответ от API');
       logSystemEvent('Некорректный ответ от API Liquipedia', LOG_CONFIG.LOG_LEVELS.ERROR);
       throw error;
     }
     
-    console.log('API returned', data.result.length, 'matches');
-    logSystemEvent(`API вернул ${data.result.length} матчей`, LOG_CONFIG.LOG_LEVELS.INFO);
-    return data.result;
+  console.log('API returned', data.result.length, 'matches');
+  logSystemEvent(`API вернул ${data.result.length} матчей`, LOG_CONFIG.LOG_LEVELS.INFO);
+  return data.result;
   } catch (error) {
     console.error('API fetch error:', error);
     logSystemEvent(`Ошибка запроса к API: ${error.message}`, LOG_CONFIG.LOG_LEVELS.ERROR);
@@ -695,7 +677,7 @@ function fetchAllMatchesWithDebug() {
   }
 }
 
-// Улучшенная функция повторных попыток
+    // Улучшенная функция повторных попыток
 function fetchAllMatchesWithRetry() {
   let lastError;
   
@@ -704,22 +686,22 @@ function fetchAllMatchesWithRetry() {
       console.log(`API attempt ${attempt} of ${CONFIG.MAX_RETRIES}`);
       logSystemEvent(`Попытка API ${attempt} из ${CONFIG.MAX_RETRIES}`, LOG_CONFIG.LOG_LEVELS.INFO);
       
-      const result = fetchAllMatchesWithDebug();
+  const result = fetchAllMatchesWithDebug();
       
-      if (!result || !Array.isArray(result)) {
+  if (!result || !Array.isArray(result)) {
         throw new Error('Invalid API response format');
       }
       
-      console.log(`API attempt ${attempt} successful, matches: ${result.length}`);
+  console.log(`API attempt ${attempt} successful, matches: ${result.length}`);
       logSystemEvent(`Попытка API ${attempt} успешна, матчей: ${result.length}`, LOG_CONFIG.LOG_LEVELS.SUCCESS);
       return result;
       
-    } catch (error) {
+  } catch (error) {
       lastError = error;
       console.error(`API attempt ${attempt} failed:`, error);
       logSystemEvent(`Попытка API ${attempt} не удалась: ${error.message}`, LOG_CONFIG.LOG_LEVELS.WARNING);
       
-      if (attempt < CONFIG.MAX_RETRIES) {
+  if (attempt < CONFIG.MAX_RETRIES) {
         const delay = CONFIG.RETRY_DELAY * attempt;
         console.log(`Waiting ${delay}ms before retry...`);
         logSystemEvent(`Ожидание ${delay}мс перед повторной попыткой`, LOG_CONFIG.LOG_LEVELS.INFO);
@@ -728,13 +710,13 @@ function fetchAllMatchesWithRetry() {
     }
   }
   
-  // Если все попытки провалились - возвращаем пустой массив вместо ошибки
+    // Если все попытки провалились - возвращаем пустой массив вместо ошибки
   console.error(`All ${CONFIG.MAX_RETRIES} API attempts failed, returning empty array`);
   logSystemEvent(`Все ${CONFIG.MAX_RETRIES} попытки API не удались, возвращаем пустой массив`, LOG_CONFIG.LOG_LEVELS.ERROR);
   return [];
 }
 
-// Функция для удаления триггеров
+    // Функция для удаления триггеров
 function deleteBackgroundUpdateTrigger(functionName = 'runBackgroundUpdate') {
   try {
     const triggers = ScriptApp.getProjectTriggers();
@@ -751,12 +733,12 @@ function deleteBackgroundUpdateTrigger(functionName = 'runBackgroundUpdate') {
   }
 }
 
-// Функция для получения данных из кэша
+    // Функция для получения данных из кэша
 function getTeamMatches(shouldUpdate = false) {
   const cache = CacheService.getScriptCache();
   const rawCached = cache.get("raw_matches_data");
   
-  // Обновляем данные только если явно запрошено
+    // Обновляем данные только если явно запрошено
   if (shouldUpdate) {
     console.log('Forced update requested, fetching fresh data...');
     logSystemEvent('Запрошено принудительное обновление данных', LOG_CONFIG.LOG_LEVELS.INFO);
@@ -771,7 +753,7 @@ function getTeamMatches(shouldUpdate = false) {
       logSystemEvent(`Используются кэшированные данные, возраст: ${ageMinutes} мин`, LOG_CONFIG.LOG_LEVELS.INFO);
       
       // Обрабатываем сырые данные с ТЕКУЩИМ временем
-      const result = processMatches(rawCacheData.rawMatches);
+  const result = processMatches(rawCacheData.rawMatches);
       return result;
     } catch (e) {
       console.error('Error parsing raw cache, will try to refresh', e);
@@ -784,18 +766,18 @@ function getTeamMatches(shouldUpdate = false) {
   return fetchDataSynchronously();
 }
 
-// Синхронное получение данных (только когда кэша нет)
+    // Синхронное получение данных (только когда кэша нет)
 function fetchDataSynchronously() {
   try {
     console.log('Synchronous API fetch started');
     logSystemEvent('Запуск синхронного получения данных', LOG_CONFIG.LOG_LEVELS.INFO);
     
-    const allMatches = fetchAllMatchesWithRetry();
-    const teamMatches = filterTeamMatches(allMatches);
-    const result = processMatches(teamMatches);
+  const allMatches = fetchAllMatchesWithRetry();
+  const teamMatches = filterTeamMatches(allMatches);
+  const result = processMatches(teamMatches);
     
     // Сохраняем СЫРЫЕ данные в кэш
-    const rawCacheData = {
+  const rawCacheData = {
       rawMatches: teamMatches,
       timestamp: new Date().getTime(),
       source: 'api_sync'
@@ -804,10 +786,10 @@ function fetchDataSynchronously() {
     cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
     cache.put("last_successful_update", new Date().getTime().toString(), 3600);
     
-    console.log('Synchronous fetch completed successfully');
-    logSystemEvent('Синхронное получение данных завершено успешно', LOG_CONFIG.LOG_LEVELS.SUCCESS);
+  console.log('Synchronous fetch completed successfully');
+  logSystemEvent('Синхронное получение данных завершено успешно', LOG_CONFIG.LOG_LEVELS.SUCCESS);
     
-    return result;
+  return result;
   } catch (error) {
     console.error('Synchronous fetch failed:', error);
     logSystemEvent(`Синхронное получение данных не удалось: ${error.message}`, LOG_CONFIG.LOG_LEVELS.ERROR);
@@ -821,7 +803,7 @@ function fetchDataSynchronously() {
   }
 }
 
-// Фильтрация матчей по команде
+    // Фильтрация матчей по команде
 function filterTeamMatches(matches) {
   if (!matches || !Array.isArray(matches)) {
     return [];
@@ -835,7 +817,7 @@ function filterTeamMatches(matches) {
   const filtered = matches.filter(match => {
     if (!match || !match.match2opponents) return false;
     
-    for (let opponent of match.match2opponents) {
+  for (let opponent of match.match2opponents) {
       if (opponent && opponent.name) {
         const opponentName = opponent.name.toLowerCase().trim();
         if (opponentName === searchName) {
@@ -851,7 +833,7 @@ function filterTeamMatches(matches) {
   return filtered;
 }
 
-// Обработка матчей - ВСЕГДА с текущим временем
+    // Обработка матчей - ВСЕГДА с текущим временем
 function processMatches(matches) {
   if (!matches || matches.length === 0) {
     logSystemEvent(`Матчи для ${CONFIG.TEAM_NAME} не найдены`, LOG_CONFIG.LOG_LEVELS.INFO);
@@ -868,19 +850,19 @@ function processMatches(matches) {
   matches.forEach(match => {
     if (!match.match2opponents || match.match2opponents.length < 2) return;
     
-    const teams = extractTeamsFromMatch(match);
-    if (!teams) return;
+  const teams = extractTeamsFromMatch(match);
+  if (!teams) return;
     
-    const matchDate = parseLiquipediaDate(match.date);
-    const timeDiff = matchDate.getTime() - now.getTime();
-    const hoursDiff = timeDiff / (1000 * 60 * 60);
+  const matchDate = parseLiquipediaDate(match.date);
+  const timeDiff = matchDate.getTime() - now.getTime();
+  const hoursDiff = timeDiff / (1000 * 60 * 60);
     
     // Показываем матчи, которые еще не начались или начались не более 4 часов назад
-    if (hoursDiff < -4) return;
+  if (hoursDiff < -4) return;
     
-    const matchStatus = getMatchStatus(match, hoursDiff);
+  const matchStatus = getMatchStatus(match, hoursDiff);
     
-    if (!matchStatus.isFinished) {
+  if (!matchStatus.isFinished) {
       formattedMatches.push({
         team1: teams.team,
         team2: teams.opponent,
@@ -918,14 +900,14 @@ function processMatches(matches) {
   };
 }
 
-// Парсинг даты из Liquipedia
+    // Парсинг даты из Liquipedia
 function parseLiquipediaDate(dateString) {
   if (!dateString) return new Date();
   const utcDateString = dateString.replace(' ', 'T') + 'Z';
   return new Date(utcDateString);
 }
 
-// Извлечение команд из матча
+    // Извлечение команд из матча
 function extractTeamsFromMatch(match) {
   let team = null;
   let opponent = null;
@@ -936,7 +918,7 @@ function extractTeamsFromMatch(match) {
     if (!opp || !opp.name) continue;
     const opponentName = opp.name.toLowerCase().trim();
     
-    if (opponentName === searchName) {
+   if (opponentName === searchName) {
       team = opp.name;
     } else {
       opponent = opp.name;
@@ -946,7 +928,7 @@ function extractTeamsFromMatch(match) {
   return team && opponent ? { team, opponent } : null;
 }
 
-// Функция определения статуса матча
+    // Функция определения статуса матча
 function getMatchStatus(match, hoursDiff) {
   const apiStatus = match.status ? match.status.toLowerCase() : '';
   const isFinished = match.finished === true;
@@ -957,12 +939,12 @@ function getMatchStatus(match, hoursDiff) {
     return { text: "Завершен", isLive: false, isUpcoming: false, isFinished: true };
   }
   
-  // ЛОГИКА ДЛЯ LIVE МАТЧЕЙ
+    // ЛОГИКА ДЛЯ LIVE МАТЧЕЙ
   if (apiStatus === 'live' || apiStatus === 'ongoing') {
     return { text: "🔴 ONLINE СЕЙЧАС", isLive: true, isUpcoming: false, isFinished: false };
   }
   
-  // МАТЧИ, КОТОРЫЕ ДОЛЖНЫ БЫТЬ LIVE, НО API ЕЩЁ НЕ ОБНОВИЛОСЬ
+    // МАТЧИ, КОТОРЫЕ ДОЛЖНЫ БЫТЬ LIVE, НО API ЕЩЁ НЕ ОБНОВИЛОСЬ
   const minutesDiff = hoursDiff * 60;
   if (minutesDiff >= -180 && minutesDiff <= 5) { // От -3 часов до +5 минут
     if (hasScore && !isFinished) {
@@ -970,7 +952,7 @@ function getMatchStatus(match, hoursDiff) {
     }
     
     // Если матч должен идти по расписанию, но статус не обновлен
-    if (minutesDiff <= 0 && minutesDiff >= -120) { // От 0 до -2 часов
+  if (minutesDiff <= 0 && minutesDiff >= -120) { // От 0 до -2 часов
       return { text: "🔴 ONLINE СЕЙЧАС", isLive: true, isUpcoming: false, isFinished: false };
     }
   }
@@ -986,14 +968,14 @@ function getMatchStatus(match, hoursDiff) {
   }
 }
 
-// Форматирование времени до матча - ВСЕГДА актуальное
+    // Форматирование времени до матча - ВСЕГДА актуальное
 function formatTimeUntil(hoursDiff) {
   if (hoursDiff > 0) {
     const days = Math.floor(hoursDiff / 24);
     const hours = Math.floor(hoursDiff % 24);
     const minutes = Math.floor((hoursDiff * 60) % 60);
     
-    if (days > 0) {
+   if (days > 0) {
       return { text: `через ${days}д ${hours}ч`, isLive: false, isUpcoming: true, isFinished: false };
     } else if (hours > 0) {
       return { text: `через ${hours}ч ${minutes}м`, isLive: false, isUpcoming: true, isFinished: false };
@@ -1007,7 +989,7 @@ function formatTimeUntil(hoursDiff) {
   return { text: "Скоро", isLive: false, isUpcoming: true, isFinished: false };
 }
 
-// Форматирование даты и времени
+    // Форматирование даты и времени
 function formatDateTime(date) {
   try {
     const formatter = new Intl.DateTimeFormat('ru-RU', {
@@ -1020,35 +1002,35 @@ function formatDateTime(date) {
   }
 }
 
-// Функция для StreamElements - следующий матч
+    // Функция для StreamElements - следующий матч
 function getNextMatch() {
   try {
     const result = getTeamMatches(false); // false = не обновлять данные
     
-    if (result.error) {
+  if (result.error) {
       logSystemEvent('Временные проблемы с получением данных для getNextMatch', LOG_CONFIG.LOG_LEVELS.WARNING);
       return "⚠️ Временные проблемы с получением данных";
     }
     
-    if (!result.hasMatches) {
+  if (!result.hasMatches) {
       logSystemEvent(`Матчей ${CONFIG.TEAM_NAME} не запланировано (getNextMatch)`, LOG_CONFIG.LOG_LEVELS.INFO);
       return `⏳ На данный момент матчей ${CONFIG.TEAM_NAME} не запланировано`;
     }
     
-    const nextMatch = result.matches[0];
+   const nextMatch = result.matches[0];
     let message = nextMatch.isLive ? 
       `🔴 ONLINE: ${nextMatch.team1} vs ${nextMatch.team2}` :
       `⏰ Следующий матч: ${nextMatch.team1} vs ${nextMatch.team2} | ${nextMatch.timeUntil}`;
     
-    if (nextMatch.tournament && nextMatch.tournament !== "Турнир") {
+  if (nextMatch.tournament && nextMatch.tournament !== "Турнир") {
       message += ` | ${nextMatch.tournament}`;
     }
     
-    if (nextMatch.bestOf) {
+  if (nextMatch.bestOf) {
       message += ` | BO${nextMatch.bestOf}`;
     }
     
-    logSystemEvent(`getNextMatch: ${message}`, LOG_CONFIG.LOG_LEVELS.INFO);
+   logSystemEvent(`getNextMatch: ${message}`, LOG_CONFIG.LOG_LEVELS.INFO);
     return message;
   } catch (error) {
     console.error('getNextMatch Error:', error);
@@ -1057,36 +1039,36 @@ function getNextMatch() {
   }
 }
 
-// Функция для StreamElements - все предстоящие матчи
+    // Функция для StreamElements - все предстоящие матчи
 function getAllUpcomingMatches() {
   try {
     const result = getTeamMatches(false); // false = не обновлять данные
     
-    if (result.error || !result.hasMatches) {
+  if (result.error || !result.hasMatches) {
       logSystemEvent(`Матчей ${CONFIG.TEAM_NAME} не запланировано (getAllUpcomingMatches)`, LOG_CONFIG.LOG_LEVELS.INFO);
       return `⏳ На данный момент матчей ${CONFIG.TEAM_NAME} не запланировано`;
     }
     
-    const activeMatches = result.matches.filter(match => 
+  const activeMatches = result.matches.filter(match => 
       (match.isLive || match.isUpcoming) && !match.isFinished
     );
     
-    if (activeMatches.length === 0) {
+  if (activeMatches.length === 0) {
       logSystemEvent(`Активных матчей ${CONFIG.TEAM_NAME} не найдено (getAllUpcomingMatches)`, LOG_CONFIG.LOG_LEVELS.INFO);
       return `⏳ На данный момент матчей ${CONFIG.TEAM_NAME} не запланировано`;
     }
     
-    let message = `🗓️ Ближайшие матчи ${CONFIG.TEAM_NAME}: `;
+  let message = `🗓️ Ближайшие матчи ${CONFIG.TEAM_NAME}: `;
     activeMatches.slice(0, 3).forEach((match, index) => {
       const status = match.isLive ? "ONLINE" : match.timeUntil;
       message += `${index + 1}. vs ${match.team2} - ${status}; `;
     });
     
-    if (activeMatches.length > 3) {
+  if (activeMatches.length > 3) {
       message += `... и еще ${activeMatches.length - 3} матчей`;
     }
     
-    logSystemEvent(`getAllUpcomingMatches: ${message}`, LOG_CONFIG.LOG_LEVELS.INFO);
+  logSystemEvent(`getAllUpcomingMatches: ${message}`, LOG_CONFIG.LOG_LEVELS.INFO);
     return message;
   } catch (error) {
     console.error('getAllUpcomingMatches Error:', error);
@@ -1095,20 +1077,20 @@ function getAllUpcomingMatches() {
   }
 }
 
-// Резервное получение данных при ошибках
+    // Резервное получение данных при ошибках
 function getCachedDataWithFallback() {
   try {
     const cache = CacheService.getScriptCache();
     const rawCached = cache.get("raw_matches_data");
     
-    if (rawCached) {
+  if (rawCached) {
       const rawCacheData = JSON.parse(rawCached);
       const cacheAge = Math.round((new Date().getTime() - rawCacheData.timestamp) / 60000);
       
       // Обрабатываем сырые данные с ТЕКУЩИМ временем
-      const result = processMatches(rawCacheData.rawMatches);
+  const result = processMatches(rawCacheData.rawMatches);
       
-      if (result.hasMatches && result.matches.length > 0) {
+  if (result.hasMatches && result.matches.length > 0) {
         const nextMatch = result.matches[0];
         logSystemEvent('Использованы кэшированные данные (fallback)', LOG_CONFIG.LOG_LEVELS.WARNING);
         return nextMatch.isLive ? 
@@ -1117,7 +1099,7 @@ function getCachedDataWithFallback() {
       }
     }
     
-    logSystemEvent('Данные временно недоступны (fallback)', LOG_CONFIG.LOG_LEVELS.WARNING);
+   logSystemEvent('Данные временно недоступны (fallback)', LOG_CONFIG.LOG_LEVELS.WARNING);
     return "⏳ Данные временно недоступны. Попробуйте позже.";
   } catch (error) {
     logSystemEvent('Сервис временно недоступен (fallback)', LOG_CONFIG.LOG_LEVELS.ERROR);
@@ -1125,15 +1107,15 @@ function getCachedDataWithFallback() {
   }
 }
 
-// ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО ОБНОВЛЕНИЯ
+    // ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО ОБНОВЛЕНИЯ
 function forceRefresh() {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
   
-  // 1. Обновляем время попытки для принудительных обновлений
+    // 1. Обновляем время попытки для принудительных обновлений
   cache.put("last_forced_attempt", now.toString(), 900);
   
-  // 2. Проверяем, нужно ли пропустить
+    // 2. Проверяем, нужно ли пропустить
   if (shouldSkipUpdate('forced')) {
     logSystemEvent('Принудительное обновление пропущено - слишком частый запрос', LOG_CONFIG.LOG_LEVELS.WARNING);
     return "🔄 Принудительное обновление пропущено - слишком частый запрос";
@@ -1143,22 +1125,22 @@ function forceRefresh() {
     console.log('Force refresh requested');
     logSystemEvent('Запрос принудительного обновления', LOG_CONFIG.LOG_LEVELS.INFO);
     
-    const allMatches = fetchAllMatchesWithRetry();
-    const teamMatches = filterTeamMatches(allMatches);
+  const allMatches = fetchAllMatchesWithRetry();
+  const teamMatches = filterTeamMatches(allMatches);
     
-    const rawCacheData = {
+  const rawCacheData = {
       rawMatches: teamMatches,
       timestamp: now,
       source: 'api_force'
     };
     
-    cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
-    cache.put("last_successful_update", now.toString(), 3600);
+  cache.put("raw_matches_data", JSON.stringify(rawCacheData), CONFIG.CACHE_DURATION / 1000);
+  cache.put("last_successful_update", now.toString(), 3600);
     
-    console.log('Force refresh completed - raw data updated');
-    logSystemEvent('Принудительное обновление завершено - данные обновлены', LOG_CONFIG.LOG_LEVELS.SUCCESS);
+  console.log('Force refresh completed - raw data updated');
+  logSystemEvent('Принудительное обновление завершено - данные обновлены', LOG_CONFIG.LOG_LEVELS.SUCCESS);
     
-    return "✅ Данные успешно обновлены";
+  return "✅ Данные успешно обновлены";
   } catch (error) {
     console.error('Force refresh failed:', error);
     logSystemEvent(`Принудительное обновление не удалось: ${error.message}`, LOG_CONFIG.LOG_LEVELS.ERROR);
@@ -1166,15 +1148,15 @@ function forceRefresh() {
   }
 }
 
-// ФУНКЦИЯ ИСПРАВЛЕНИЯ КЭША
+    // ФУНКЦИЯ ИСПРАВЛЕНИЯ КЭША
 function fixStaleCache() {
   const cache = CacheService.getScriptCache();
   const now = new Date().getTime();
   
-  // 1. Обновляем время попытки фонового обновления
+    // 1. Обновляем время попытки фонового обновления
   cache.put("last_background_attempt", now.toString(), 900);
   
-  // 2. Проверяем, нужно ли пропустить
+    // 2. Проверяем, нужно ли пропустить
   if (shouldSkipUpdate('background')) {
     logSystemEvent('Исправление кэша пропущено - слишком частый запрос', LOG_CONFIG.LOG_LEVELS.WARNING);
     return "🔄 Исправление кэша пропущено - слишком частый запрос";
@@ -1192,10 +1174,10 @@ function fixStaleCache() {
     const cacheAge = now - cacheData.timestamp;
     const cacheAgeMinutes = Math.round(cacheAge / 60000);
     
-    console.log(`Cache age: ${cacheAgeMinutes} minutes, forcing refresh`);
-    logSystemEvent(`Возраст кэша: ${cacheAgeMinutes} минут, принудительное обновление`, LOG_CONFIG.LOG_LEVELS.INFO);
+  console.log(`Cache age: ${cacheAgeMinutes} minutes, forcing refresh`);
+  logSystemEvent(`Возраст кэша: ${cacheAgeMinutes} минут, принудительное обновление`, LOG_CONFIG.LOG_LEVELS.INFO);
     
-    if (cacheAgeMinutes > 10) {
+  if (cacheAgeMinutes > 10) {
       console.log('Cache is stale, forcing refresh...');
       logSystemEvent('Кэш устарел, запуск принудительного обновления', LOG_CONFIG.LOG_LEVELS.WARNING);
       const result = runBackgroundUpdate();
@@ -1210,7 +1192,7 @@ function fixStaleCache() {
   }
 }
 
-// Очистка кэша
+    // Очистка кэша
 function clearCache() {
   const cache = CacheService.getScriptCache();
   cache.remove("raw_matches_data");
@@ -1224,7 +1206,7 @@ function clearCache() {
   cache.remove("error_count");
   cache.remove("update_in_progress");
   
-  // Очищаем счетчики API
+    // Очищаем счетчики API
   const now = new Date();
   const today = now.toDateString();
   cache.remove(`api_requests_${today}`);
@@ -1232,7 +1214,7 @@ function clearCache() {
     cache.remove(`api_requests_${i}`);
   }
   
-  // Удаляем старые триггеры если есть
+    // Удаляем старые триггеры если есть
   const triggers = ScriptApp.getProjectTriggers();
   for (const trigger of triggers) {
     if (trigger.getHandlerFunction() === 'runBackgroundUpdate' || trigger.getHandlerFunction() === 'runForcedBackgroundUpdate') {
@@ -1245,29 +1227,28 @@ function clearCache() {
   return "✅ Кэш очищен";
 }
 
-// ОБНОВЛЕННАЯ ВЕБ-ПАНЕЛЬ
+     // ВЕБ-ПАНЕЛЬ
 function getStatusDashboard(shouldRefreshData = false) {
   try {
-    // ВАЖНО: обновляем данные ТОЛЬКО если явно запрошено И прошло достаточно времени
     if (shouldRefreshData) {
       const cache = CacheService.getScriptCache();
       const now = new Date().getTime();
       const lastUpdate = cache.get("last_successful_update");
       
       // Проверяем, не было ли успешного обновления в последние 2 минуты
-      const shouldUpdateForDashboard = !lastUpdate || 
+  const shouldUpdateForDashboard = !lastUpdate || 
         (now - parseInt(lastUpdate)) > CONFIG.USER_REQUEST_UPDATE_INTERVAL;
       
-      if (shouldUpdateForDashboard) {
+  if (shouldUpdateForDashboard) {
         logSystemEvent('Панель управления запросила обновление данных', LOG_CONFIG.LOG_LEVELS.INFO);
         
-        // Используем отдельный флаг для обновлений с панели
-        const lastDashboardUpdate = cache.get("last_dashboard_update");
+      // Используем отдельный флаг для обновлений с панели
+  const lastDashboardUpdate = cache.get("last_dashboard_update");
         if (!lastDashboardUpdate || (now - parseInt(lastDashboardUpdate)) > 2 * 60 * 1000) {
           cache.put("last_dashboard_update", now.toString(), 900);
           
-          // Запускаем в фоне, без ожидания
-          try {
+      // Запускаем в фоне, без ожидания
+  try {
             ScriptApp.newTrigger('runBackgroundUpdate')
               .timeBased()
               .after(3000)
@@ -1279,14 +1260,14 @@ function getStatusDashboard(shouldRefreshData = false) {
       }
     }
     
-    const status = getUpdateStatus();
-    const cache = CacheService.getScriptCache();
-    const currentCache = cache.get("raw_matches_data");
+  const status = getUpdateStatus();
+  const cache = CacheService.getScriptCache();
+  const currentCache = cache.get("raw_matches_data");
     
-    let matchesInfo = [];
-    let matchesError = null;
+  let matchesInfo = [];
+  let matchesError = null;
     
-    if (currentCache) {
+  if (currentCache) {
       try {
         const cacheData = JSON.parse(currentCache);
         if (cacheData.rawMatches && cacheData.rawMatches.length > 0) {
@@ -1300,9 +1281,9 @@ function getStatusDashboard(shouldRefreshData = false) {
       }
     }
     
-    const scriptUrl = ScriptApp.getService().getUrl();
+  const scriptUrl = ScriptApp.getService().getUrl();
     
-    const html = `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -1323,7 +1304,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       --transition: all 0.3s ease;
     }
     
-    * {
+  * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -1391,7 +1372,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       backdrop-filter: blur(10px);
     }
     
-    /* СЕКЦИЯ МАТЧЕЙ - ПЕРЕНЕСЕНА ВВЕРХ */
+        /* СЕКЦИЯ МАТЧЕЙ - ПЕРЕНЕСЕНА ВВЕРХ */
     .matches-section {
       margin-bottom: 30px;
     }
@@ -1550,7 +1531,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       color: #666;
     }
     
-    /* СЕТКА СТАТИСТИКИ */
+        /* СЕТКА СТАТИСТИКИ */
     .stats-section {
       margin-bottom: 30px;
     }
@@ -1651,7 +1632,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       border-left: 4px solid var(--warning-color);
     }
     
-    /* НОВАЯ СЕКЦИЯ: КОНСОЛЬ ЛОГОВ */
+        /* НОВАЯ СЕКЦИЯ: КОНСОЛЬ ЛОГОВ */
     .console-section {
       margin-bottom: 30px;
     }
@@ -1760,7 +1741,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       padding: 20px;
     }
     
-    /* ПАНЕЛЬ УПРАВЛЕНИЯ */
+        /* ПАНЕЛЬ УПРАВЛЕНИЯ */
     .controls-section {
       margin-bottom: 20px;
     }
@@ -1811,7 +1792,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       color: white;
     }
     
-    /* ФУТЕР */
+        /* ФУТЕР */
     .footer {
       text-align: center;
       padding: 20px;
@@ -1856,7 +1837,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       text-decoration: underline;
     }
     
-    /* АДАПТИВНОСТЬ */
+        /* АДАПТИВНОСТЬ */
     @media (max-width: 1200px) {
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1905,7 +1886,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       }
     }
     
-    /* УТИЛИТЫ */
+        /* УТИЛИТЫ */
     .no-matches {
       text-align: center;
       padding: 40px 20px;
@@ -1930,7 +1911,7 @@ function getStatusDashboard(shouldRefreshData = false) {
       box-shadow: var(--box-shadow);
     }
     
-    /* Стили для уведомлений */
+        /* Стили для уведомлений */
     .custom-notification {
       position: fixed;
       top: 20px;
@@ -1961,18 +1942,18 @@ function getStatusDashboard(shouldRefreshData = false) {
     </div>
     
     <!-- СООБЩЕНИЕ ОБ ОШИБКЕ -->
-    ${matchesError ? `
-    <div class="error-message">
+   ${matchesError ? `
+  <div class="error-message">
       ⚠️ ${matchesError}
     </div>
     ` : ''}
     
     <!-- СЕКЦИЯ МАТЧЕЙ - ТЕПЕРЬ ПЕРВАЯ -->
-    <div class="matches-section">
+  <div class="matches-section">
       <h2 class="section-title">🎯 Текущие матчи</h2>
       
-      ${matchesInfo.length > 0 ? `
-      <div class="matches-grid">
+  ${matchesInfo.length > 0 ? `
+  <div class="matches-grid">
         ${matchesInfo.map((match, index) => `
           <div class="match-card ${match.isLive ? 'live' : 'upcoming'}" 
                data-raw-date="${match.rawDate}" 
@@ -1986,7 +1967,7 @@ function getStatusDashboard(shouldRefreshData = false) {
               </div>
             </div>
             
-            <div class="match-details">
+   <div class="match-details">
               <div class="match-tournament">
                 <span>🏆</span>
                 <span>${match.tournament && match.tournament !== "Турнир" ? match.tournament : 'Турнир'}</span>
@@ -1999,7 +1980,7 @@ function getStatusDashboard(shouldRefreshData = false) {
               </div>
             </div>
             
-            <div class="match-meta">
+  <div class="match-meta">
               ${match.bestOf ? `
               <div class="meta-item">
                 <span>🎯</span>
@@ -2030,10 +2011,10 @@ function getStatusDashboard(shouldRefreshData = false) {
     </div>
     
     <!-- СЕТКА МОНИТОРИНГА -->
-    <div class="stats-section">
+   <div class="stats-section">
       <h2 class="section-title">📊 Мониторинг системы</h2>
       
-      <div class="stats-grid">
+   <div class="stats-grid">
         <!-- Карточка 1: Статус кэша -->
         <div class="stat-card ${status.cacheInfo && status.cacheInfo.cacheAgeMinutes > 30 ? 'error' : status.cacheInfo && status.cacheInfo.cacheAgeMinutes > 15 ? 'warning' : 'success'}" id="stat-cache">
           <h3>🕒 Статус кэша</h3>
@@ -2046,7 +2027,7 @@ function getStatusDashboard(shouldRefreshData = false) {
         </div>
         
         <!-- Карточка 2: Обновления -->
-        <div class="stat-card ${status.timeSinceLastUpdate && status.timeSinceLastUpdate.includes('minutes') && parseInt(status.timeSinceLastUpdate) > 10 ? 'warning' : 'success'}" id="stat-updates">
+   <div class="stat-card ${status.timeSinceLastUpdate && status.timeSinceLastUpdate.includes('minutes') && parseInt(status.timeSinceLastUpdate) > 10 ? 'warning' : 'success'}" id="stat-updates">
           <h3>🔄 Обновления</h3>
           <div class="stat-value">${status.timeSinceLastUpdate || 'N/A'}</div>
           <div class="stat-details">
@@ -2058,7 +2039,7 @@ function getStatusDashboard(shouldRefreshData = false) {
         </div>
         
         <!-- Карточка 3: Ошибки -->
-        <div class="stat-card ${status.lastError && status.lastError !== 'нет' ? 'error' : 'success'}" id="stat-errors">
+  <div class="stat-card ${status.lastError && status.lastError !== 'нет' ? 'error' : 'success'}" id="stat-errors">
           <h3>🚨 Ошибки</h3>
           <div class="stat-value">${status.errorCount || '0'}</div>
           <div class="stat-details">
@@ -2068,7 +2049,7 @@ function getStatusDashboard(shouldRefreshData = false) {
         </div>
         
         <!-- Карточка 4: API Использование -->
-        <div class="stat-card ${status.apiUsage && status.apiUsage.usagePercent > 80 ? 'warning' : 'success'}" id="stat-api">
+  <div class="stat-card ${status.apiUsage && status.apiUsage.usagePercent > 80 ? 'warning' : 'success'}" id="stat-api">
           <h3>📡 API Использование</h3>
           <div class="stat-value">${status.apiUsage ? status.apiUsage.usagePercent : '0'}%</div>
           <div class="stat-details">
@@ -2081,7 +2062,7 @@ function getStatusDashboard(shouldRefreshData = false) {
         </div>
         
         <!-- Карточка 5: Интервалы -->
-        <div class="stat-card" id="stat-intervals">
+  <div class="stat-card" id="stat-intervals">
           <h3>⚙️ Интервалы</h3>
           <div class="stat-value">${CONFIG.MAX_RETRIES} попытки</div>
           <div class="stat-details">
@@ -2092,7 +2073,7 @@ function getStatusDashboard(shouldRefreshData = false) {
         </div>
         
         <!-- Карточка 6: Производительность -->
-        <div class="stat-card" id="stat-performance">
+   <div class="stat-card" id="stat-performance">
           <h3>🚀 Производительность</h3>
           <div class="stat-value">v3.0</div>
           <div class="stat-details">
@@ -2104,8 +2085,8 @@ function getStatusDashboard(shouldRefreshData = false) {
       </div>
       
       <!-- ДЕТАЛИ ОШИБКИ ЕСЛИ ЕСТЬ -->
-      ${status.lastError && status.lastError !== 'нет' ? `
-      <div class="stat-card error" style="grid-column: 1 / -1;">
+  ${status.lastError && status.lastError !== 'нет' ? `
+  <div class="stat-card error" style="grid-column: 1 / -1;">
         <h3>📋 Детали последней ошибки</h3>
         <div class="error-details">${status.lastErrorDetails || status.lastError}</div>
         <div class="stat-details">
@@ -2115,11 +2096,11 @@ function getStatusDashboard(shouldRefreshData = false) {
       ` : ''}
     </div>
     
-    <!-- НОВАЯ СЕКЦИЯ: КОНСОЛЬ ЛОГОВ -->
-    <div class="console-section">
+    <!-- КОНСОЛЬ ЛОГОВ -->
+  <div class="console-section">
       <h2 class="section-title">📝 Консоль системы</h2>
       
-      <div class="console-container">
+   <div class="console-container">
         <div class="console-header">
           <div class="console-title">Журнал событий системы</div>
           <div class="console-controls">
@@ -2128,7 +2109,7 @@ function getStatusDashboard(shouldRefreshData = false) {
           </div>
         </div>
         
-        <div class="console-logs" id="consoleLogs">
+   <div class="console-logs" id="consoleLogs">
           ${status.systemLogs && status.systemLogs.length > 0 ? status.systemLogs.map(log => `
             <div class="log-entry">
               <span class="log-time">${log.time}</span>
@@ -2143,10 +2124,10 @@ function getStatusDashboard(shouldRefreshData = false) {
     </div>
     
     <!-- ПАНЕЛЬ УПРАВЛЕНИЯ -->
-    <div class="controls-section">
+   <div class="controls-section">
       <h2 class="section-title">🎛️ Управление</h2>
       
-      <div class="controls-grid">
+  <div class="controls-grid">
         <a href="${scriptUrl}?function=runBackgroundUpdate" class="control-btn btn-success">
           <span>🔄</span>
           <span>Обновить сейчас</span>
@@ -2175,7 +2156,7 @@ function getStatusDashboard(shouldRefreshData = false) {
     </div>
     
     <!-- ФУТЕР -->
-    <div class="footer">
+   <div class="footer">
       <div class="auto-refresh-info">
         <span>🔄 Авто-обновление через:</span>
         <span class="countdown-badge" id="countdown">60</span>
@@ -2185,14 +2166,14 @@ function getStatusDashboard(shouldRefreshData = false) {
         <a href="javascript:void(0)" onclick="restartAutoRefresh()" class="footer-link">Перезапустить</a>
       </div>
       
-      <div class="footer-links">
+  <div class="footer-links">
         <span>📍 Панель управления • Обновлено: ${new Date().toLocaleString('ru-RU')}</span>
         <a href="${scriptUrl}" class="footer-link">Основная страница</a>
       </div>
     </div>
   </div>
   
-  <!-- JavaScript с исправлениями -->
+  <!-- JavaScript -->
   <script>
     let autoRefreshTimer;
     let countdownTimer;
@@ -2273,7 +2254,6 @@ function getStatusDashboard(shouldRefreshData = false) {
         console.log('✅ Таймеры реального времени активированы');
     }
     
-    // ФУНКЦИЯ ОБНОВЛЕНИЯ ДАННЫХ
     function refreshMatchData() {
         if (isRefreshing) return;
         
@@ -2301,7 +2281,6 @@ function getStatusDashboard(shouldRefreshData = false) {
             });
     }
     
-    // ОБНОВЛЯЕМ КАРТОЧКИ МАТЧЕЙ
     function updateMatchCards(matches) {
         const matchesSection = document.querySelector('.matches-section');
         if (!matchesSection) return;
@@ -2413,7 +2392,6 @@ function getStatusDashboard(shouldRefreshData = false) {
         initializeRealTimeUpdates();
     }
     
-    // ФУНКЦИЯ ОБНОВЛЕНИЯ СТАТУСА СИСТЕМЫ
     function refreshSystemStatus() {
         console.log('🔄 Обновление статуса системы...');
         
@@ -2433,11 +2411,9 @@ function getStatusDashboard(shouldRefreshData = false) {
             });
     }
     
-    // ОБНОВЛЕНИЕ БЛОКОВ МОНИТОРИНГА
     function updateSystemStatus(status) {
         if (!status) return;
         
-        // Карточка 1: Статус кэша
         const cacheCard = document.getElementById('stat-cache');
         if (cacheCard && status.cacheInfo) {
             const valueEl = cacheCard.querySelector('.stat-value');
@@ -2460,7 +2436,6 @@ function getStatusDashboard(shouldRefreshData = false) {
             cacheCard.className = cardClass;
         }
         
-        // Карточка 2: Обновления
         const updateCard = document.getElementById('stat-updates');
         if (updateCard) {
             const valueEl = updateCard.querySelector('.stat-value');
@@ -2476,7 +2451,6 @@ function getStatusDashboard(shouldRefreshData = false) {
             updateCard.className = 'stat-card ' + (minutesSinceUpdate > 10 ? 'warning' : 'success');
         }
         
-        // Карточка 3: Ошибки
         const errorsCard = document.getElementById('stat-errors');
         if (errorsCard) {
             const valueEl = errorsCard.querySelector('.stat-value');
@@ -2489,7 +2463,6 @@ function getStatusDashboard(shouldRefreshData = false) {
             errorsCard.className = 'stat-card ' + (status.lastError && status.lastError !== 'нет' ? 'error' : 'success');
         }
         
-        // Карточка 4: API Использование
         const apiCard = document.getElementById('stat-api');
         if (apiCard && status.apiUsage) {
             const valueEl = apiCard.querySelector('.stat-value');
@@ -2505,11 +2478,9 @@ function getStatusDashboard(shouldRefreshData = false) {
             apiCard.className = 'stat-card ' + (status.apiUsage.usagePercent > 80 ? 'warning' : 'success');
         }
         
-        // Обновляем консоль
         updateConsoleLogs(status.systemLogs);
     }
     
-    // ОБНОВЛЕНИЕ КОНСОЛИ ЛОГОВ
     function updateConsoleLogs(systemLogs) {
         const consoleLogs = document.getElementById('consoleLogs');
         if (!consoleLogs) return;
@@ -2527,7 +2498,6 @@ function getStatusDashboard(shouldRefreshData = false) {
         }
     }
     
-    // АВТО-ОБНОВЛЕНИЕ СТРАНИЦЫ
     function startAutoRefresh() {
         stopAutoRefresh();
         
@@ -2726,8 +2696,7 @@ function getStatusDashboard(shouldRefreshData = false) {
             setTimeout(() => notification.remove(), 300);
         }, 4000);
     }
-    
-    // ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🚀 PARIVISION Matches Dashboard initialized');
         
@@ -2753,7 +2722,7 @@ function getStatusDashboard(shouldRefreshData = false) {
 </html>
   `;
   
-    return HtmlService.createHtmlOutput(html);
+  return HtmlService.createHtmlOutput(html);
   } catch (error) {
     const errorHtml = `
 <!DOCTYPE html>
@@ -2834,7 +2803,7 @@ function getStatusDashboard(shouldRefreshData = false) {
   }
 }
 
-// Функция для отладки
+    // Функция для отладки
 function debugMatches() {
   console.log('=== DEBUG START ===');
   const result = getTeamMatches(false);
