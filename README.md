@@ -1,7 +1,7 @@
     // Конфигурация
 const CONFIG = {
   LIQUIPEDIA_API: "https://api.liquipedia.net/api/v3",
-  LIQUIPEDIA_TOKEN: "gs5CYirguo31uHuyUZtkdTUfBfxDIESzHbuuNMpyQjKBqORyLbebiKQsbmWya4zh93vq06IsCkr5j9MMLXSBlHsf0n9cGCJHG8Et8FsBjOxIRLyC8EQTm9QlKiCAmfoA",
+  LIQUIPEDIA_TOKEN: "api-key",
   TEAM_NAME: "PARIVISION",
   CACHE_DURATION: 24 * 60 * 60 * 1000,
   TIMEZONE: "Asia/Krasnoyarsk",
