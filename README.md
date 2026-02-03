@@ -3,15 +3,15 @@ const CONFIG = {
   LIQUIPEDIA_API: "https://api.liquipedia.net/api/v3",
   LIQUIPEDIA_TOKEN: "gs5CYirguo31uHuyUZtkdTUfBfxDIESzHbuuNMpyQjKBqORyLbebiKQsbmWya4zh93vq06IsCkr5j9MMLXSBlHsf0n9cGCJHG8Et8FsBjOxIRLyC8EQTm9QlKiCAmfoA",
   TEAM_NAME: "PARIVISION",
-  CACHE_DURATION: 24 * 60 * 60 * 1000, // 24 часа - основной кэш
+  CACHE_DURATION: 24 * 60 * 60 * 1000,
   TIMEZONE: "Asia/Krasnoyarsk",
   WIKI: "counterstrike",
   LIMIT: 200,
   
     // интервалы обновления
-  BACKGROUND_UPDATE_INTERVAL: 10 * 60 * 1000,        // 10 минут между фоновыми обновлениями
-  USER_REQUEST_UPDATE_INTERVAL: 20 * 60 * 1000,       // 2 минуты между обновлениями по запросу пользователя
-  MIN_UPDATE_INTERVAL: 5 * 60 * 1000,                // 5 минут минимальный интервал
+  BACKGROUND_UPDATE_INTERVAL: 10 * 60 * 1000,
+  USER_REQUEST_UPDATE_INTERVAL: 20 * 60 * 1000,
+  MIN_UPDATE_INTERVAL: 5 * 60 * 1000,
   
     // Настройки повторных попыток
   MAX_RETRIES: 2,
@@ -21,7 +21,7 @@ const CONFIG = {
   SYNC_UPDATE_TIMEOUT: 15000,
   
     // Настройки для AJAX-запросов
-  CACHE_AGE_FOR_UPDATE: 10 * 60 * 1000,              // 10 минут - возраст кэша для принудительного обновления
+  CACHE_AGE_FOR_UPDATE: 10 * 60 * 1000,
 };
 
     // Система логирования
@@ -53,7 +53,6 @@ function doGet(e) {
         break;
         
    case 'getMatchesJSON':
-         // AJAX ДЛЯ ПАНЕЛИ: только возвращаем данные, не обновляем
    return ContentService.createTextOutput(JSON.stringify(getTeamMatches(false)))
           .setMimeType(ContentService.MimeType.JSON);
           
@@ -72,7 +71,7 @@ function doGet(e) {
             
    console.log('Cache age for AJAX:', cacheAgeMinutes, 'minutes');
             
-            // Если кэш очень старый (больше 30 минут) - принудительно обновляем
+    // Если кэш очень старый (больше 30 минут) - принудительно обновляем
    if (cacheAgeMinutes > 30) {
   console.log('Cache is very old (' + cacheAgeMinutes + ' min), forcing update...');
   shouldForceUpdate = true;
@@ -162,7 +161,7 @@ function shouldSkipUpdate(updateType = 'background') {
   
     // 2. Получаем возраст кэша
   const currentCache = cache.get("raw_matches_data");
-  let cacheAgeMinutes = 999; // Большое значение, если кэша нет
+  let cacheAgeMinutes = 999;
   
   if (currentCache) {
     try {
@@ -187,7 +186,7 @@ function shouldSkipUpdate(updateType = 'background') {
     const lastUpdateTime = lastUpdate ? parseInt(lastUpdate) : 0;
     const minutesSinceLastUpdate = Math.round((now - lastUpdateTime) / 60000);
     
-  if (minutesSinceLastUpdate > 5) { // Прошло больше 5 минут с последнего обновления
+  if (minutesSinceLastUpdate > 5) {
       console.log(`Cache is old, last update was ${minutesSinceLastUpdate} min ago, allowing update`);
       return false;
     }
@@ -248,7 +247,7 @@ function runForcedBackgroundUpdate() {
     throw new Error('No team matches received');
     }
     
-     // Сохраняем данные
+    // Сохраняем данные
   const rawCacheData = {
       rawMatches: teamMatches,
       timestamp: now,
@@ -645,7 +644,7 @@ function fetchAllMatchesWithDebug() {
       'Accept': 'application/json'
     },
     'muteHttpExceptions': true,
-    'validateHttpsCertificates': false // ИСПРАВЛЕНИЕ SSL ОШИБОК
+    'validateHttpsCertificates': false
   };
   
   try {
@@ -844,7 +843,7 @@ function processMatches(matches) {
     };
   }
   
-  const now = new Date(); // ВАЖНО: используем ТЕКУЩЕЕ время
+  const now = new Date();
   const formattedMatches = [];
   
   matches.forEach(match => {
@@ -871,7 +870,7 @@ function processMatches(matches) {
         isLive: matchStatus.isLive,
         isUpcoming: matchStatus.isUpcoming,
         tournament: match.tournament || "Турнир",
-        rawDate: matchDate.getTime(), // ВАЖНО: передаем timestamp для клиента
+        rawDate: matchDate.getTime(),
         bestOf: match.bestof,
         status: match.status,
         finished: match.finished,
@@ -946,13 +945,13 @@ function getMatchStatus(match, hoursDiff) {
   
     // МАТЧИ, КОТОРЫЕ ДОЛЖНЫ БЫТЬ LIVE, НО API ЕЩЁ НЕ ОБНОВИЛОСЬ
   const minutesDiff = hoursDiff * 60;
-  if (minutesDiff >= -180 && minutesDiff <= 5) { // От -3 часов до +5 минут
+  if (minutesDiff >= -180 && minutesDiff <= 5) {
     if (hasScore && !isFinished) {
       return { text: "🔴 ONLINE СЕЙЧАС", isLive: true, isUpcoming: false, isFinished: false };
     }
     
     // Если матч должен идти по расписанию, но статус не обновлен
-  if (minutesDiff <= 0 && minutesDiff >= -120) { // От 0 до -2 часов
+  if (minutesDiff <= 0 && minutesDiff >= -120) {
       return { text: "🔴 ONLINE СЕЙЧАС", isLive: true, isUpcoming: false, isFinished: false };
     }
   }
@@ -1005,7 +1004,7 @@ function formatDateTime(date) {
     // Функция для StreamElements - следующий матч
 function getNextMatch() {
   try {
-    const result = getTeamMatches(false); // false = не обновлять данные
+    const result = getTeamMatches(false);
     
   if (result.error) {
       logSystemEvent('Временные проблемы с получением данных для getNextMatch', LOG_CONFIG.LOG_LEVELS.WARNING);
@@ -1042,7 +1041,7 @@ function getNextMatch() {
     // Функция для StreamElements - все предстоящие матчи
 function getAllUpcomingMatches() {
   try {
-    const result = getTeamMatches(false); // false = не обновлять данные
+    const result = getTeamMatches(false);
     
   if (result.error || !result.hasMatches) {
       logSystemEvent(`Матчей ${CONFIG.TEAM_NAME} не запланировано (getAllUpcomingMatches)`, LOG_CONFIG.LOG_LEVELS.INFO);
@@ -1087,7 +1086,7 @@ function getCachedDataWithFallback() {
       const rawCacheData = JSON.parse(rawCached);
       const cacheAge = Math.round((new Date().getTime() - rawCacheData.timestamp) / 60000);
       
-      // Обрабатываем сырые данные с ТЕКУЩИМ временем
+    // Обрабатываем сырые данные с ТЕКУЩИМ временем
   const result = processMatches(rawCacheData.rawMatches);
       
   if (result.hasMatches && result.matches.length > 0) {
@@ -1227,7 +1226,7 @@ function clearCache() {
   return "✅ Кэш очищен";
 }
 
-     // ВЕБ-ПАНЕЛЬ
+    // ВЕБ-ПАНЕЛЬ
 function getStatusDashboard(shouldRefreshData = false) {
   try {
     if (shouldRefreshData) {
